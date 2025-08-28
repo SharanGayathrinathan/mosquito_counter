@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dengue Live Counter</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #111827;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --primary: #2563eb;
+      --secondary: #475569;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 40px 20px;
+      font-family: Arial, Helvetica, sans-serif;
+      text-align: center;
+      background-color: var(--bg);
+      color: var(--text);
+    }
+    h1 { margin: 0 0 20px; }
+    .controls {
+      margin: 16px auto 10px;
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 10px 18px;
+      font-size: 16px;
+      border: 0;
+      border-radius: 10px;
+      cursor: pointer;
+      background: var(--primary);
+      color: white;
+    }
+    button.secondary { background: var(--secondary); }
+    .elapsed {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .wrap {
+      max-width: 900px;
+      margin: 22px auto 0;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+    .counter {
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 16px;
+      font-size: 22px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    }
+    .label { display: block; font-size: 16px; color: var(--muted); margin-bottom: 6px; }
+    .value { font-size: 34px; font-weight: 700; }
+    .disclaimer {
+      margin: 18px auto 0;
+      max-width: 900px;
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+  </style>
+</head>
+<body>
+  <h1>Mosquito Borne Disease Impact Counter</h1>
+
+  <div class="controls">
+    <button id="startBtn">Start</button>
+    <button id="resetBtn" class="secondary">Reset</button>
+  </div>
+  <div class="elapsed" id="elapsed">Elapsed time 00:00</div>
+
+  <div class="wrap">
+    <div class="counter">
+      <span class="label">Mosquito related deaths during this talk</span>
+      <span class="value" id="deaths">0</span>
+    </div>
+    <div class="counter">
+      <span class="label">Dengue infections occurred during this talk</span>
+      <span class="value" id="infections">0</span>
+    </div>
+    <div class="counter">
+      <span class="label">People having the chance of contracting the disease during this talk</span>
+      <span class="value" id="riskRate">0</span>
+    </div>
+  </div>
+
+  <div class="disclaimer">
+    These counters are illustrative approximations based on global yearly estimates distributed evenly across a 365 day year. They are not real time surveillance.
+  </div>
+
+  <script>
+    // Yearly totals
+    const YEARLY_DEATHS = 1000000;
+    const YEARLY_INFECTIONS = 400000000;
+    const AT_RISK_TOTAL = 3900000000;
+
+    // Constants
+    const SECONDS_PER_YEAR = 365 * 24 * 60 * 60;
+
+    // Per second rates
+    const deathsPerSec = YEARLY_DEATHS / SECONDS_PER_YEAR;        // ~0.032
+    const infectionsPerSec = YEARLY_INFECTIONS / SECONDS_PER_YEAR; // ~12.7
+    const atRiskPerSec = AT_RISK_TOTAL / SECONDS_PER_YEAR;        // ~124
+
+    // State
+    let startTime = null;
+    let rafId = null;
+
+    // Helpers
+    const fmt = n => Math.round(n).toLocaleString();
+    const pad = n => String(n).padStart(2, '0');
+
+    function render(elapsedSec) {
+      const deaths = deathsPerSec * elapsedSec;
+      const infections = infectionsPerSec * elapsedSec;
+      const riskAdded = atRiskPerSec * elapsedSec;
+
+      document.getElementById('deaths').textContent = fmt(deaths);
+      document.getElementById('infections').textContent = fmt(infections);
+      document.getElementById('riskRate').textContent = fmt(riskAdded);
+
+      const m = Math.floor(elapsedSec / 60);
+      const s = Math.floor(elapsedSec % 60);
+      document.getElementById('elapsed').textContent = 'Elapsed time ' + pad(m) + ':' + pad(s);
+    }
+
+    function loop() {
+      if (!startTime) return;
+      const now = performance.now();
+      const elapsedSec = (now - startTime) / 1000;
+      render(elapsedSec);
+      rafId = requestAnimationFrame(loop);
+    }
+
+    document.getElementById('startBtn').addEventListener('click', () => {
+      if (rafId) return;
+      startTime = performance.now();
+      rafId = requestAnimationFrame(loop);
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = null;
+      startTime = null;
+      render(0);
+    });
+
+    // initial paint
+    render(0);
+  </script>
+</body>
+</html>
